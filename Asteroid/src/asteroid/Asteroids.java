@@ -121,8 +121,44 @@ public class Asteroids extends Applet implements Runnable, KeyListener {
 	}
 	
 	@Override
-	public void keyPressed(KeyEvent arg0) {
+	public void keyPressed(KeyEvent k) {
 		// TODO Auto-generated method stub
+		int keyCode = k.getKeyCode();
+		switch (keyCode){
+		case KeyEvent.VK_LEFT:
+			ship.incFaceAngle(-5);
+			if (ship.getFaceAngle() < 0)
+				ship.setFaceAngle(360-5);
+			break;
+		case KeyEvent.VK_RIGHT:
+			ship.incFaceAngle(5);
+			if (ship.getFaceAngle() > 360)
+				ship.setFaceAngle(5);
+			break;
+		case KeyEvent.VK_UP:
+			ship.setMoveAngle(ship.getFaceAngle() - 90);
+			ship.incVelX(calcAngleMoveX(ship.getMoveAngle())*0.1);
+			ship.incVelY(calcAngleMoveY(ship.getMoveAngle())*0.1);
+			break;
+		case KeyEvent.VK_CONTROL:
+		case KeyEvent.VK_ENTER:
+		case KeyEvent.VK_SPACE:
+			currentBullet++;
+			if (currentBullet > BULLETS -1)
+				currentBullet = 0;
+			bullet[currentBullet].setAlive(true);
+			
+			bullet[currentBullet].setX(ship.getX());
+			bullet[currentBullet].setY(ship.getY());
+			bullet[currentBullet].setMoveAngle(ship.getFaceAngle() - 90);
+			
+			double angle = bullet[currentBullet].getMoveAngle();
+			double svx = ship.getVelX();
+			double svy = ship.getVelY();
+			bullet[currentBullet].setVelX(svx + calcAngleMoveX(angle) * 2);
+			bullet[currentBullet].setVelY(svy + calcAngleMoveY(angle) * 2);
+			break;
+		}
 
 	}
 
@@ -136,6 +172,14 @@ public class Asteroids extends Applet implements Runnable, KeyListener {
 	public void keyTyped(KeyEvent arg0) {
 		// TODO Auto-generated method stub
 
+	}
+	
+	public double calcAngleMoveX(double angle){
+		return (double)(Math.cos(angle * Math.PI / 180));
+	}
+	
+	public double calcAngleMoveY(double angle){
+		return (double)(Math.sin(angle * Math.PI / 180));
 	}
 
 	@Override
@@ -176,7 +220,85 @@ public class Asteroids extends Applet implements Runnable, KeyListener {
 	}
 	
 	public void updateBullets(){
+		for (int n = 0; n < BULLETS; n++){
+			if (bullet[n].isAlive()){
+				bullet[n].incX(bullet[n].getVelX());
+				
+				if(bullet[n].getX() < 0 ||
+						bullet[n].getX() > getSize().width)
+				{
+					bullet[n].setAlive(false);
+				}
+				
+				bullet[n].incY(bullet[n].getVelY());
+				
+				if(bullet[n].getY() < 0 
+						|| bullet[n].getY() > getSize().height)
+				{
+					bullet[n].setAlive(false);
+				}
+			}
+			
+		}
+	}
+	
+	public void updateAsteroids(){
 		
+		for(int n = 0; n < ASTEROIDS; n++){
+			
+			if (ast[n].isAlive()){
+				ast[n].incX(ast[n].getVelX());
+				
+				if (ast[n].getX() < -20)
+					ast[n].setX(getSize().width + 20);
+				else if (ast[n].getX() > getSize().width + 20)
+					ast[n].setX(-20);
+				
+				ast[n].incY(ast[n].getVelY());
+				
+				if (ast[n].getY() < -20)
+					ast[n].setY(getSize().height + 20);
+				else if (ast[n].getY() > getSize().height + 20)
+					ast[n].setY(-20);
+				
+				ast[n].incMoveAngle(ast[n].getRotVel());
+				
+				if (ast[n].getMoveAngle() < 0)
+					ast[n].setMoveAngle(360 - ast[n].getRotVel());
+				else if (ast[n].getMoveAngle() > 360)
+					ast[n].setMoveAngle(ast[n].getRotVel());
+			}
+		}
+		
+	}
+	
+	public void checkCollisions(){
+		for (int m = 0; m < ASTEROIDS; m++){
+			if (ast[m].isAlive()){
+				for(int n = 0; n < BULLETS; n++){
+					if (bullet[n].isAlive()){
+						
+						if (ast[m].getBounds().contains(
+								bullet[n].getX(), bullet[n].getY()))
+						{
+							bullet[n].setAlive(false);
+							ast[m].setAlive(false);
+							continue;
+						}
+					}
+				}
+				
+				if (ast[m].getBounds().intersects(ship.getBounds())){
+					ast[m].setAlive(false);
+					ship.setX(320);
+					ship.setY(240);
+					ship.setFaceAngle(0);
+					ship.setVelX(0);
+					ship.setVelY(0);
+					continue;
+				}
+			}
+		}
 	}
 	
 	private void gameUpdate(){
